@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/antchfx/xmlquery"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/davecgh/go-spew/spew"
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -22,7 +23,7 @@ import (
 )
 
 var (
-	secRL = ratelimit.New(5)
+	secRL = ratelimit.New(9)
 
 	indexURL = "https://www.sec.gov/Archives/edgar/daily-index/%d/QTR%d/"
 )
@@ -49,6 +50,77 @@ func main() {
 		return v.FormType == "4" || v.FormType == "4/A"
 	})
 	log.Printf("Filtered down to %d 4 and 4/A filings", len(filings))
+
+	csvData := [][]string{
+		{"CIK", "ACCESSION_NUMBER", "NAME_OF_REPORTING_PERSON", "A_OR_D", "AMOUNT", "PRICE", "TRANSACTION_DATE", "TITLE_OF_SECURITY", "ISSUER_NAME", "ISSUER_TICKER", "TITLE", "NEW_AMOUNT_OWNED", "OWNERSHIP_FORM"},
+	}
+	csvData = csvData
+
+	for i, filing := range filings {
+		// Check if exists
+		log.Printf("Downlaoding %+v", filing)
+		var content []byte
+		var err error
+		filePath := "form4_xml/" + fmt.Sprintf("%s_%s.xml", filing.CIK, filing.AccessionNumber)
+		if _, err = os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+			// path/to/whatever does not exist
+			content, err = DownloadSECFile("https://www.sec.gov/Archives/" + filing.FileName)
+			if err != nil {
+				log.Printf("Error downloading file %s", filePath)
+				log.Fatal(err)
+			}
+
+			// Write file to disk
+			err = ioutil.WriteFile(filePath, content, 0777)
+			if err != nil {
+				log.Println("Failed to write file to disk", filePath)
+				log.Fatal(err)
+			}
+		} else {
+			// Read from disk
+			content, err = ioutil.ReadFile(filePath)
+			if err != nil {
+				log.Println("Error reading file on disk", filePath)
+				log.Fatal(err)
+			}
+		}
+
+		// Extract the XML portion, some files use form4.xml while others use primarydocument.xml
+		// https://www.sec.gov/Archives/edgar/data/0001184237/000156218022003904/xslF345X03/primarydocument.xml
+		// https://www.sec.gov/Archives/edgar/data/1000623/000106299322009210/xslF345X03/form4.xml
+		parts := strings.Split(string(content), "<XML>")
+		if len(parts) != 2 {
+			log.Printf("Skipping %s, invalid parts 1", filePath)
+			continue
+		}
+		parts = strings.Split(parts[1], "</XML>")
+		if len(parts) != 2 {
+			log.Printf("Skipping %s, invalid parts 2", filePath)
+			continue
+		}
+
+		content = []byte(parts[0])
+
+		doc, err := xmlquery.Parse(bytes.NewReader(content))
+		if err != nil {
+			log.Println("Failed to parse file", filePath)
+			log.Fatal(err)
+		}
+
+		issuerName, err := xmlquery.Query(doc, "//ownershipDocument/issuer/issuerName")
+		if err != nil {
+			log.Println("Error getting issuer name")
+			log.Println(err)
+			continue
+		} else if issuerName == nil {
+			log.Println("Issuer Name was nil for", filePath)
+			continue
+		}
+		// log.Println("Got issuer", issuerName.InnerText())
+		log.Printf("Parsed %d/%d", i, len(filings))
+	}
+
+	log.Println("Done")
 }
 
 func DownloadSECFile(url string) ([]byte, error) {
@@ -207,9 +279,4 @@ func GetFilingsForYearQuarter(year, quarter int) ([]*DailyFilingsRow, error) {
 	}
 
 	return filings, nil
-}
-
-func DownloadDailyFilingsToDisk(filings []*DailyFilingsRow) error {
-
-	return nil
 }
