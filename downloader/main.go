@@ -90,6 +90,7 @@ func main() {
 		// https://www.sec.gov/Archives/edgar/data/0001184237/000156218022003904/xslF345X03/primarydocument.xml
 		// https://www.sec.gov/Archives/edgar/data/1000623/000106299322009210/xslF345X03/form4.xml
 		// https://www.sec.gov/Archives/edgar/data/1775157/000154161722000010/primary_doc.xml
+		// https://www.sec.gov/Archives/edgar/data/0001452857/000092189522001052/xslF345X03/form404197004_04012022.xml
 		parts := strings.Split(string(content), "<XML>")
 		if len(parts) != 2 {
 			log.Printf("Skipping %s, invalid parts 1", filePath)
