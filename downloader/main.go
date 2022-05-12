@@ -54,11 +54,10 @@ func main() {
 	csvData := [][]string{
 		{"ISSUER_CIK", "REPORTER_CIK", "ACCESSION_NUMBER", "NAME_OF_REPORTING_PERSON", "A_OR_D", "AMOUNT", "PRICE", "TRANSACTION_DATE", "TITLE_OF_SECURITY", "ISSUER_NAME", "ISSUER_TICKER", "IS_DIRECTOR", "IS_OFFICER", "IS_TEN_PERCENT_OWNER", "IS_OTHER_RELATIONSHIP", "NEW_AMOUNT_OWNED", "DIRECT_OR_INDIRECT_OWNERSHIP"},
 	}
-	csvData = csvData
 
 	for i, filing := range filings {
 		// Check if exists
-		log.Printf("Downlaoding %+v", filing)
+		log.Printf("Downloading %+v", filing)
 		var content []byte
 		var err error
 		filePath := "form4_xml/" + fmt.Sprintf("%s_%s.xml", filing.CIK, filing.AccessionNumber)
