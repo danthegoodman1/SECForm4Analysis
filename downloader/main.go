@@ -27,6 +27,8 @@ var (
 	secRL = ratelimit.New(9)
 
 	indexURL = "https://www.sec.gov/Archives/edgar/daily-index/%d/QTR%d/"
+	year     = 2022
+	quarter  = 1
 )
 
 type DailyFilingsRow struct {
@@ -40,7 +42,7 @@ type DailyFilingsRow struct {
 
 func main() {
 	// Get the master files
-	filings, err := GetFilingsForYearQuarter(2022, 2)
+	filings, err := GetFilingsForYearQuarter(year, quarter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +58,7 @@ func main() {
 		{"ISSUER_CIK", "REPORTER_CIK", "ACCESSION_NUMBER", "NAME_OF_REPORTING_PERSON", "A_OR_D", "AMOUNT", "PRICE", "TRANSACTION_DATE", "TITLE_OF_SECURITY", "ISSUER_NAME", "ISSUER_TICKER", "IS_DIRECTOR", "IS_OFFICER", "IS_TEN_PERCENT_OWNER", "IS_OTHER_RELATIONSHIP", "NEW_AMOUNT_OWNED", "DIRECT_OR_INDIRECT_OWNERSHIP"},
 	}
 
-	for _, filing := range filings {
+	for i, filing := range filings {
 		// Check if exists
 		// log.Printf("Downloading %+v", filing)
 		var content []byte
@@ -116,7 +118,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if issuerCIK == nil {
-			log.Println("Issuer CIK was nil for", filePath)
+			// log.Println("Issuer CIK was nil for", filePath)
 			continue
 		}
 
@@ -126,7 +128,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if reportingPersonCIK == nil {
-			log.Println("Reporting CIK was nil for", filePath)
+			// log.Println("Reporting CIK was nil for", filePath)
 			continue
 		}
 
@@ -136,7 +138,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if reportingPersonName == nil {
-			log.Println("reportingPerson Name was nil for", filePath)
+			// log.Println("reportingPerson Name was nil for", filePath)
 			continue
 		}
 
@@ -146,7 +148,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if aOrD == nil {
-			log.Println("a or d was nil for", filePath)
+			// log.Println("a or d was nil for", filePath)
 			continue
 		}
 
@@ -156,7 +158,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if amount == nil {
-			log.Println("amount was nil for", filePath)
+			// log.Println("amount was nil for", filePath)
 			continue
 		}
 
@@ -166,7 +168,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if price == nil {
-			log.Println("price was nil for", filePath)
+			// log.Println("price was nil for", filePath)
 			continue
 		}
 
@@ -176,7 +178,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if transactionDate == nil {
-			log.Println("transaction date was nil for", filePath)
+			// log.Println("transaction date was nil for", filePath)
 			continue
 		}
 
@@ -186,7 +188,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if titleOfSecurity == nil {
-			log.Println("security title was nil for", filePath)
+			// log.Println("security title was nil for", filePath)
 			continue
 		}
 
@@ -196,7 +198,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if issuerName == nil {
-			log.Println("Issuer Name was nil for", filePath)
+			// log.Println("Issuer Name was nil for", filePath)
 			continue
 		}
 
@@ -206,7 +208,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if issuerTicker == nil {
-			log.Println("issuer ticker was nil for", filePath)
+			// log.Println("issuer ticker was nil for", filePath)
 			continue
 		}
 
@@ -264,7 +266,7 @@ func main() {
 			log.Println(err)
 			continue
 		} else if newAmountOwned == nil {
-			log.Println("price was nil for", filePath)
+			// log.Println("price was nil for", filePath)
 			continue
 		}
 
@@ -274,14 +276,16 @@ func main() {
 			log.Println(err)
 			continue
 		} else if directOrIndirectOwnership == nil {
-			log.Println("ownershipForm was nil for", filePath)
+			// log.Println("ownershipForm was nil for", filePath)
 			continue
 		}
 
 		csvData = append(csvData, []string{issuerCIK.InnerText(), reportingPersonCIK.InnerText(), filing.AccessionNumber, reportingPersonName.InnerText(), aOrD.InnerText(), amount.InnerText(), price.InnerText(), transactionDate.InnerText(), titleOfSecurity.InnerText(), issuerName.InnerText(), issuerTicker.InnerText(), isDirectorText, isOfficerText, isTenPercentOwnerText, isOtherText, newAmountOwned.InnerText(), directOrIndirectOwnership.InnerText()})
+
+		log.Printf("Processed %d/%d", i, len(filings))
 	}
 
-	f, err := os.Create("form4.csv")
+	f, err := os.Create(fmt.Sprintf("form4_%d_q%d.csv", year, quarter))
 	if err != nil {
 		log.Println("Failed to create form4.csv")
 		log.Fatal(err)
