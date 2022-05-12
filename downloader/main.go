@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,7 +53,7 @@ func main() {
 	log.Printf("Filtered down to %d 4 and 4/A filings", len(filings))
 
 	csvData := [][]string{
-		{"CIK", "ACCESSION_NUMBER", "NAME_OF_REPORTING_PERSON", "A_OR_D", "AMOUNT", "PRICE", "TRANSACTION_DATE", "TITLE_OF_SECURITY", "ISSUER_NAME", "ISSUER_TICKER", "TITLE", "NEW_AMOUNT_OWNED", "OWNERSHIP_FORM"},
+		{"ISSUER_CIK", "REPORTER_CIK", "ACCESSION_NUMBER", "NAME_OF_REPORTING_PERSON", "A_OR_D", "AMOUNT", "PRICE", "TRANSACTION_DATE", "TITLE_OF_SECURITY", "ISSUER_NAME", "ISSUER_TICKER", "IS_DIRECTOR", "IS_OFFICER", "IS_TEN_PERCENT_OWNER", "IS_OTHER_RELATIONSHIP", "NEW_AMOUNT_OWNED", "DIRECT_OR_INDIRECT_OWNERSHIP"},
 	}
 	csvData = csvData
 
@@ -107,6 +108,88 @@ func main() {
 			log.Fatal(err)
 		}
 
+		reportingPersonName, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/rptOwnerName")
+		if err != nil {
+			log.Println("Error getting reportingPerson name")
+			log.Println(err)
+			continue
+		} else if reportingPersonName == nil {
+			log.Println("reportingPerson Name was nil for", filePath)
+			continue
+		}
+
+		reportingPersonCIK, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/rptOwnerCik")
+		if err != nil {
+			log.Println("Error getting reporting cik")
+			log.Println(err)
+			continue
+		} else if reportingPersonCIK == nil {
+			log.Println("Reporting CIK was nil for", filePath)
+			continue
+		}
+
+		aOrD, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/transactionAmounts/transactionAcquiredDisposedCode/value")
+		if err != nil {
+			log.Println("Error getting a or d")
+			log.Println(err)
+			continue
+		} else if aOrD == nil {
+			log.Println("a or d was nil for", filePath)
+			continue
+		}
+
+		amount, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/transactionAmounts/transactionShares/value")
+		if err != nil {
+			log.Println("Error getting amount")
+			log.Println(err)
+			continue
+		} else if amount == nil {
+			log.Println("amount was nil for", filePath)
+			continue
+		}
+		amountInt, err := strconv.Atoi(amount.InnerText())
+		if err != nil {
+			log.Println("Error getting amount as int for", filePath)
+			log.Println(err)
+			continue
+		}
+
+		price, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/transactionAmounts/transactionPricePerShare/value")
+		if err != nil {
+			log.Println("Error getting price")
+			log.Println(err)
+			continue
+		} else if price == nil {
+			log.Println("price was nil for", filePath)
+			continue
+		}
+		priceInt, err := strconv.Atoi(price.InnerText())
+		if err != nil {
+			log.Println("Error getting price as int for", filePath)
+			log.Println(err)
+			continue
+		}
+
+		transactionDate, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/transactionDate/value")
+		if err != nil {
+			log.Println("Error getting transaction date")
+			log.Println(err)
+			continue
+		} else if transactionDate == nil {
+			log.Println("transaction date was nil for", filePath)
+			continue
+		}
+
+		titleOfSecurity, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/securityTitle/value")
+		if err != nil {
+			log.Println("Error getting security title")
+			log.Println(err)
+			continue
+		} else if titleOfSecurity == nil {
+			log.Println("security title was nil for", filePath)
+			continue
+		}
+
 		issuerName, err := xmlquery.Query(doc, "//ownershipDocument/issuer/issuerName")
 		if err != nil {
 			log.Println("Error getting issuer name")
@@ -116,6 +199,83 @@ func main() {
 			log.Println("Issuer Name was nil for", filePath)
 			continue
 		}
+
+		issuerTicker, err := xmlquery.Query(doc, "//ownershipDocument/issuer/issuerTradingSymbol")
+		if err != nil {
+			log.Println("Error getting issuer ticker")
+			log.Println(err)
+			continue
+		} else if issuerTicker == nil {
+			log.Println("issuer ticker was nil for", filePath)
+			continue
+		}
+
+		isDirector, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/reportingOwnerRelationship/isDirector")
+		if err != nil {
+			log.Println("Error getting isDirector")
+			log.Println(err)
+			continue
+		} else if isDirector == nil {
+			log.Println("isDirector was nil for", filePath)
+			continue
+		}
+
+		isOfficer, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/reportingOwnerRelationship/isOfficer")
+		if err != nil {
+			log.Println("Error getting isOfficer")
+			log.Println(err)
+			continue
+		} else if isOfficer == nil {
+			log.Println("isOfficer was nil for", filePath)
+			continue
+		}
+
+		isTenPercentOwner, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/reportingOwnerRelationship/isTenPercentOwner")
+		if err != nil {
+			log.Println("Error getting isTenPercentOwner")
+			log.Println(err)
+			continue
+		} else if isTenPercentOwner == nil {
+			log.Println("isTenPercentOwner was nil for", filePath)
+			continue
+		}
+
+		isOther, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/reportingOwnerRelationship/isOther")
+		if err != nil {
+			log.Println("Error getting isOther")
+			log.Println(err)
+			continue
+		} else if isOther == nil {
+			log.Println("isOther was nil for", filePath)
+			continue
+		}
+
+		newAmountOwned, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/postTransactionAmounts/sharesOwnedFollowingTransaction/value")
+		if err != nil {
+			log.Println("Error getting price")
+			log.Println(err)
+			continue
+		} else if newAmountOwned == nil {
+			log.Println("price was nil for", filePath)
+			continue
+		}
+		newAmountOwnerInt, err := strconv.Atoi(newAmountOwned.InnerText())
+		if err != nil {
+			log.Println("Error getting new amount owned as int for", filePath)
+			log.Println(err)
+			continue
+		}
+
+		directOrIndirectOwnership, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/ownershipNature/directOrIndirectOwnership/value")
+		if err != nil {
+			log.Println("Error getting directOrIndirectOwnership")
+			log.Println(err)
+			continue
+		} else if directOrIndirectOwnership == nil {
+			log.Println("ownershipForm was nil for", filePath)
+			continue
+		}
+
 		// log.Println("Got issuer", issuerName.InnerText())
 		log.Printf("Parsed %d/%d", i, len(filings))
 	}
