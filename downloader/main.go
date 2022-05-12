@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -108,13 +107,13 @@ func main() {
 			log.Fatal(err)
 		}
 
-		reportingPersonName, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/rptOwnerName")
+		issuerCIK, err := xmlquery.Query(doc, "//ownershipDocument/issuer/issuerCik")
 		if err != nil {
-			log.Println("Error getting reportingPerson name")
+			log.Println("Error getting issuer cik")
 			log.Println(err)
 			continue
-		} else if reportingPersonName == nil {
-			log.Println("reportingPerson Name was nil for", filePath)
+		} else if issuerCIK == nil {
+			log.Println("Issuer CIK was nil for", filePath)
 			continue
 		}
 
@@ -125,6 +124,16 @@ func main() {
 			continue
 		} else if reportingPersonCIK == nil {
 			log.Println("Reporting CIK was nil for", filePath)
+			continue
+		}
+
+		reportingPersonName, err := xmlquery.Query(doc, "//ownershipDocument/reportingOwner/rptOwnerName")
+		if err != nil {
+			log.Println("Error getting reportingPerson name")
+			log.Println(err)
+			continue
+		} else if reportingPersonName == nil {
+			log.Println("reportingPerson Name was nil for", filePath)
 			continue
 		}
 
@@ -147,12 +156,6 @@ func main() {
 			log.Println("amount was nil for", filePath)
 			continue
 		}
-		amountInt, err := strconv.Atoi(amount.InnerText())
-		if err != nil {
-			log.Println("Error getting amount as int for", filePath)
-			log.Println(err)
-			continue
-		}
 
 		price, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/transactionAmounts/transactionPricePerShare/value")
 		if err != nil {
@@ -161,12 +164,6 @@ func main() {
 			continue
 		} else if price == nil {
 			log.Println("price was nil for", filePath)
-			continue
-		}
-		priceInt, err := strconv.Atoi(price.InnerText())
-		if err != nil {
-			log.Println("Error getting price as int for", filePath)
-			log.Println(err)
 			continue
 		}
 
@@ -259,12 +256,6 @@ func main() {
 			log.Println("price was nil for", filePath)
 			continue
 		}
-		newAmountOwnerInt, err := strconv.Atoi(newAmountOwned.InnerText())
-		if err != nil {
-			log.Println("Error getting new amount owned as int for", filePath)
-			log.Println(err)
-			continue
-		}
 
 		directOrIndirectOwnership, err := xmlquery.Query(doc, "//ownershipDocument/derivativeTable/derivativeTransaction/ownershipNature/directOrIndirectOwnership/value")
 		if err != nil {
@@ -275,6 +266,8 @@ func main() {
 			log.Println("ownershipForm was nil for", filePath)
 			continue
 		}
+
+		csvData = append(csvData, []string{issuerCIK.InnerText(), reportingPersonCIK.InnerText(), filing.AccessionNumber, reportingPersonName.InnerText(), aOrD.InnerText(), amount.InnerText(), price.InnerText(), transactionDate.InnerText(), titleOfSecurity.InnerText(), issuerName.InnerText(), issuerTicker.InnerText(), isDirector.InnerText(), isOfficer.InnerText(), isTenPercentOwner.InnerText(), isOther.InnerText(), newAmountOwned.InnerText(), directOrIndirectOwnership.InnerText()})
 
 		// log.Println("Got issuer", issuerName.InnerText())
 		log.Printf("Parsed %d/%d", i, len(filings))
