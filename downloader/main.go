@@ -28,7 +28,7 @@ var (
 
 	indexURL = "https://www.sec.gov/Archives/edgar/daily-index/%d/QTR%d/"
 	year     = 2022
-	quarter  = 1
+	quarter  = 2
 )
 
 type DailyFilingsRow struct {
